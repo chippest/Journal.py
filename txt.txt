@@ -1,0 +1,5 @@
+a python app that handles binds keys to other pytho scripts Using the Windows API via PyWin32 or ctypes, it'll have a beautiful ui, a full screen app, a dark overlay transparent background, a cross at the top right to close it, additionally, pressing escape key should close it too, it shouldn't show in the taskbar
+
+itll show entries for all the scripts in the script folder, the users will be able to add keys for each script, multiple keys, like they can set ctrl+alt+1 as the shortcut for a script and simply set shift+/ as a shortcut for another script
+
+after setting all the keybinds, the script should set them to the windows system, so that if we ever press these keys, then those scripts would get executed.

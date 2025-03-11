@@ -1,6 +1,7 @@
 import sys
-import keyboard  # Requires: pip install keyboard
-from PyQt5.QtWidgets import QApplication, QWidget, QLineEdit, QPushButton
+from PyQt5.QtWidgets import (
+    QApplication, QWidget, QLineEdit, QPushButton
+)
 from PyQt5.QtGui import QPainter, QColor, QBrush
 from PyQt5.QtCore import Qt, QPropertyAnimation
 
@@ -8,13 +9,12 @@ class DarkenedFullScreenWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Darkened Full Screen Window")
-        # Hide from the taskbar and remove the window frame
+        # Remove window frame, set as tool to hide from taskbar, and enable transparency
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.Tool)
-        # Allow a transparent background so we can draw a custom dark overlay
         self.setAttribute(Qt.WA_TranslucentBackground)
         self._closing = False
 
-        # Start with zero opacity (invisible) for fade-in
+        # Start with 0 opacity for the fade-in effect
         self.setWindowOpacity(0)
 
         # Create a centered text input
@@ -33,7 +33,7 @@ class DarkenedFullScreenWindow(QWidget):
         # Create a close button ("X") at the top right
         self.close_button = QPushButton("X", self)
         self.close_button.setFixedSize(40, 40)
-        self.close_button.clicked.connect(self.hideWithFade)
+        self.close_button.clicked.connect(self.close)
         self.close_button.setStyleSheet("""
             QPushButton {
                 background-color: red;
@@ -48,57 +48,55 @@ class DarkenedFullScreenWindow(QWidget):
             }
         """)
 
-        # Set the window size to full screen (but do not show it yet)
-        self.resize(QApplication.primaryScreen().size())
+        # Set full screen after widgets are created
+        self.showFullScreen()
 
     def resizeEvent(self, event):
         # Center the text input
         self.text_input.move((self.width() - self.text_input.width()) // 2,
                                (self.height() - self.text_input.height()) // 2)
-        # Position the close button in the top-right corner
+        # Position the close button at top right
         self.close_button.move(self.width() - self.close_button.width() - 20, 20)
         super().resizeEvent(event)
 
     def showEvent(self, event):
         super().showEvent(event)
-        # Fade in: animate window opacity from 0 to 1 over 300ms
+        # Fade in: transition opacity from 0 to 1 over 300ms
         self.fade_anim = QPropertyAnimation(self, b"windowOpacity")
         self.fade_anim.setDuration(300)
         self.fade_anim.setStartValue(0)
         self.fade_anim.setEndValue(1)
         self.fade_anim.start()
 
-    def hideWithFade(self):
+    def closeEvent(self, event):
         if not self._closing:
             self._closing = True
-            # Fade out: animate window opacity from current value to 0 over 300ms
+            # Fade out: transition opacity from current value to 0 over 300ms
             self.fade_anim = QPropertyAnimation(self, b"windowOpacity")
             self.fade_anim.setDuration(300)
             self.fade_anim.setStartValue(self.windowOpacity())
             self.fade_anim.setEndValue(0)
-            self.fade_anim.finished.connect(self.finalHide)
+            self.fade_anim.finished.connect(self.finalClose)
             self.fade_anim.start()
+            event.ignore()
+        else:
+            event.accept()
 
-    def finalHide(self):
-        self._closing = False
+    def finalClose(self):
         self.hide()
+        super().close()
 
     def paintEvent(self, event):
         painter = QPainter(self)
-        # Darken the background by painting a semi-transparent black overlay
+        painter.setRenderHint(QPainter.Antialiasing)
+        # Instead of a blurred background, we darken the background
+        # Here we use a semi-transparent black overlay
         dark_color = QColor(0, 0, 0, 150)
         painter.fillRect(self.rect(), QBrush(dark_color))
         super().paintEvent(event)
 
-def main():
+if __name__ == '__main__':
     app = QApplication(sys.argv)
     window = DarkenedFullScreenWindow()
-
-    # Register global hotkey: Ctrl+Alt+1. When pressed, show the window in full-screen mode.
-    keyboard.add_hotkey('ctrl+alt+1', lambda: (window.showFullScreen(), window.show()))
-
-    # Start the application event loop
+    window.show()
     sys.exit(app.exec_())
-
-if __name__ == '__main__':
-    main()
